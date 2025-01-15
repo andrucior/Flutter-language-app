@@ -4,6 +4,8 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 class App extends StatefulWidget {
   static String videoID = 'egMWlD3fLJ8';
+
+  const App({super.key});
   // YouTube Video Full URL : https://www.youtube.com/watch?v=egMWlD3fLJ8
   @override
   _AppState createState() => _AppState();
