@@ -5,33 +5,26 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 class GoogleAuthService {
-  final String clientId = '1058215519513-a553cccaeglmnv8p3kknh0g7magv7t3r.apps.googleusercontent.com';
+  final String clientId =
+      '1058215519513-a553cccaeglmnv8p3kknh0g7magv7t3r.apps.googleusercontent.com';
   final String clientSecret = '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';
   final String redirectUri = 'http://localhost:8080';
   final String authEndpoint = 'https://accounts.google.com/o/oauth2/auth';
   final String tokenEndpoint = 'https://oauth2.googleapis.com/token';
 
   Future<String?> authenticate() async {
-    // Step 1: Generate the authorization URL
     final authUrl = Uri.parse(
-      '$authEndpoint?'
-      'client_id=$clientId&'
-      'redirect_uri=$redirectUri&'
-      'response_type=code&'
-      'scope=https://www.googleapis.com/auth/youtube.force-ssl',
+      '$authEndpoint?client_id=$clientId&redirect_uri=$redirectUri&response_type=code&scope=https://www.googleapis.com/auth/youtube.force-ssl',
     );
 
-    // Step 2: Open the URL in the browser
     if (!await launchUrl(authUrl)) {
       throw Exception('Could not open authorization URL');
     }
 
-    // Step 3: Start a local server to listen for the redirect
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 8080);
     final request = await server.first;
     final authCode = request.uri.queryParameters['code'];
 
-    // Send a response back to the browser
     request.response
       ..statusCode = HttpStatus.ok
       ..headers.contentType = ContentType.html
@@ -44,7 +37,6 @@ class GoogleAuthService {
       throw Exception('Authorization failed');
     }
 
-    // Step 4: Exchange the authorization code for an access token
     final tokenResponse = await http.post(
       Uri.parse(tokenEndpoint),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},

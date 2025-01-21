@@ -44,6 +44,7 @@ dependencies:
   youtube_player_iframe: ^5.2.1
   googleapis: 13.2.0
   googleapis_auth: ^1.6.0
+  youtube_explode_dart: ^2.3.6
 
 dev_dependencies:
   flutter_test:

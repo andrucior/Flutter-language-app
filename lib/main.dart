@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'dart:developer';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:http/http.dart' as http;
-import 'googleAuthService.dart'; // Import the GoogleAuthService class
+import 'dart:convert';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +23,7 @@ class YoutubePlayerDemoApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Youtube Player Flutter',
+      title: 'YouTube Caption Sync',
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.black,
         primarySwatch: Colors.red,
@@ -53,22 +53,32 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late YoutubePlayerController _controller;
-  late TextEditingController _idController;
+  late Timer _timer;
 
-  late PlayerState _playerState;
-  late YoutubeMetaData _videoMetaData;
-  bool _isPlayerReady = false;
+  List<Caption> _captions = [];
+  String _currentCaption = '';
+  String _translatedCaption = '';
+  bool _isHovered = false;
+  bool _isTranslating = false;
 
-  String _hoveredWord = ''; // Store the hovered word
-  Offset _hoverPosition = Offset.zero; // Store hover/tap position
-  bool _showTranslation = false; // Control translation tile visibility
+  final List<Map<String, String>> _flashcards = [];
 
-  final List<String> _ids = [
-    'ooNEcr-VgP0', // Example video ID
-  ];
-
-  List<String> subtitles = [];
-  final GoogleAuthService _googleAuthService = GoogleAuthService();
+  void _addToFlashcards(String caption, String translation) {
+    setState(() {
+      _flashcards.add({
+        'caption': caption,
+        'translation': translation,
+      });
+    });
+    log('Flashcard added: $caption -> $translation');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Added to Flashcards!'),
+      ),
+    );
+  }
+  final List<String> _ids = ['TfNAo3OWXkI']; // Example video ID
+  final String _backendUrl = 'http://localhost:5000/get_captions'; // Flask backend URL
 
   @override
   void initState() {
@@ -80,95 +90,111 @@ class _MyHomePageState extends State<MyHomePage> {
         mute: false,
         showControls: true,
         showFullscreenButton: true,
+        enableCaption: false,
       ),
-    )..listen((event) {
-        if (event.playerState == PlayerState.playing && !_isPlayerReady) {
-          setState(() {
-            _isPlayerReady = true;
-          });
-        }
-        setState(() {
-          _playerState = event.playerState;
-          _videoMetaData = event.metaData;
-        });
-      });
+    );
 
-    _idController = TextEditingController();
-    _videoMetaData = const YoutubeMetaData();
-    _playerState = PlayerState.unknown;
+    // print("Loading captions!");
+    _fetchCaptions();
 
-    _loadSubtitles();
+    // Start a timer to sync captions every 500ms.
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      _syncCaptions();
+    });
   }
 
-  Future<void> _loadSubtitles() async {
-    try {
-      // Obtain the access token using GoogleAuthService
-      final accessToken = await _googleAuthService.authenticate();
+  @override
+  void dispose() {
+    _controller.close();
+    _timer.cancel();
+    super.dispose();
+  }
 
-      if (accessToken != null) {
-        String srt = await fetchCaptions(_ids[0], accessToken);
-        subtitles = _parseSrtToWords(srt);
-        setState(() {});
+  // Load captions by calling Python backend (Flask API)
+  Future<void> _fetchCaptions() async {
+    final videoId = _ids.first; // Using the first video ID in the list
+    final url = Uri.parse('$_backendUrl?video_id=$videoId&language=es');
+
+    setState(() {
+      _captions = []; // Clear the current captions before fetching
+    });
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> captionsData = json.decode(response.body);
+        setState(() {
+          _captions = captionsData.map<Caption>((caption) {
+            return Caption(
+            text: caption['text'],
+            offset: Duration(milliseconds: (caption['start'] * 1000).toInt()),
+            duration: Duration(milliseconds: (caption['duration'] * 1000).toInt()),
+          );
+          }).toList();
+        });
       } else {
-        log('Error: Failed to get access token.');
+        // print("Error fetching captions: ${response.body}");
+        setState(() {
+          _captions = []; // Empty captions list on error
+        });
       }
     } catch (e) {
-      log('Error loading captions: $e');
+      // print("Error fetching captions: $e");
+      setState(() {
+        _captions = [];
+      });
     }
   }
 
-  Future<String> fetchCaptions(String videoId, String accessToken) async {
-    // Step 1: Get caption ID
-    final listUrl = 'https://www.googleapis.com/youtube/v3/captions';
-    final listResponse = await http.get(
-      Uri.parse('$listUrl?videoId=$videoId&part=snippet'),
-      headers: {
-        'Authorization': 'Bearer $accessToken', // Use the access token here
-      },
-    );
+  // Sync captions with the video time
+  Future<void> _syncCaptions() async {
+    if (_captions.isEmpty) return;
 
-    if (listResponse.statusCode != 200) {
-      throw Exception('Failed to fetch captions list');
-    }
+    try {
+      // Get the current playback position in milliseconds.
+      final currentTimeMillis = (await _controller.currentTime * 1000).toInt(); // Convert to milliseconds
 
-    final listData = jsonDecode(listResponse.body);
-    if (listData['items'].isEmpty) {
-      throw Exception('No captions available for this video');
-    }
+      // Convert to Duration for comparison
+      final currentTime = Duration(milliseconds: currentTimeMillis);
 
-    final captionId = listData['items'][0]['id'];
+      // Find the caption corresponding to the current time.
+      final caption = _captions.firstWhere(
+        (c) =>
+            c.offset <= currentTime &&
+            c.offset + c.duration > currentTime, // Check if the current time is within the caption's range.
+        orElse: () => Caption(text: '', offset: Duration.zero, duration: Duration.zero), // Default empty caption if none is found.
+      );
 
-    // Step 2: Download captions in SRT format
-    final downloadUrl =
-        'https://www.googleapis.com/youtube/v3/captions/$captionId?tfmt=srt';
-    final downloadResponse = await http.get(
-      Uri.parse(downloadUrl),
-      headers: {
-        'Authorization': 'Bearer $accessToken', // Use the access token here
-      },
-    );
-
-    if (downloadResponse.statusCode != 200) {
-      throw Exception('Failed to download captions');
-    }
-    print(downloadResponse);
-    return downloadResponse.body; // Return the raw SRT content
-  }
-
-  List<String> _parseSrtToWords(String srt) {
-    final lines = srt.split('\n');
-    final words = <String>[];
-    for (var line in lines) {
-      if (!line.contains('-->') && line.trim().isNotEmpty && !RegExp(r'^\d+$').hasMatch(line)) {
-        words.addAll(line.split(' '));
+      // Update the current caption only if it has changed.
+      if (caption.text != _currentCaption) {
+        setState(() {
+          _currentCaption = caption.text;
+          _translatedCaption = ''; // Reset translated caption when caption changes.
+        });
       }
+    } catch (e) {
+      // print('Error syncing captions: $e');
     }
-    return words;
   }
 
-  Future<String> _translateWord(String word) async {
-    // Mock translation function (replace with an API or library for real translation)
-    return 'Translated: $word';
+
+  Future<String> _mockTranslate(String text) async {
+    final backend = 'http://localhost:5000/get_translation';
+    final url = Uri.parse('$backend?word=$text&target=en');
+    // print(text);
+
+    try {
+      final response = await http.get(url);
+      // print(response.body.toString());
+      if (response.statusCode == 200) {
+        var translated = response.body;
+        return "Translation: $translated";
+      }
+    } catch (e) {
+        log("Error fetching captions: $e");
+      }
+    return "Could not translate. Try again later";
   }
 
   @override
@@ -177,130 +203,112 @@ class _MyHomePageState extends State<MyHomePage> {
       controller: _controller,
       builder: (context, player) => Scaffold(
         appBar: AppBar(
-          title: const Text('Youtube Player Flutter'),
+          title: const Text('YouTube Caption Sync'),
         ),
-        body: Stack(
+        body: Column(
           children: [
-            Column(
-              children: [
-                player,
-                Expanded(
-                  child: ListView(
+            player,
+            const SizedBox(height: 16),
+            MouseRegion(
+              onEnter: (_) async {
+                if (!_isTranslating) {
+                  setState(() {
+                    _isHovered = true;
+                    _isTranslating = true;
+                  });
+                  _controller.pauseVideo();
+
+                  try {
+                    final translation = await _mockTranslate(_currentCaption);
+                    if (mounted) {
+                      setState(() {
+                        _translatedCaption = translation;
+                      });
+                    }
+                  } catch (e) {
+                    log("Error during translation: $e");
+                  } finally {
+                    if (mounted) {
+                      setState(() {
+                        _isTranslating = false;
+                      });
+                    }
+                    _controller.playVideo();
+                  }
+                }
+              },
+              onExit: (_) {
+                setState(() {
+                  _isHovered = false;
+                  _translatedCaption = '';
+                });
+              },
+              child: Column(
+                children: [
+                  Container(
                     padding: const EdgeInsets.all(8.0),
-                    children: [
-                      _space,
-                      _text('Title', _videoMetaData.title),
-                      _space,
-                      _text('Channel', _videoMetaData.author),
-                      _space,
-                      _subtitleWithHover(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (_showTranslation)
-              Positioned(
-                left: _hoverPosition.dx,
-                top: _hoverPosition.dy - 50,
-                child: Material(
-                  elevation: 4.0,
-                  borderRadius: BorderRadius.circular(8.0),
-                  color: Colors.black,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: FutureBuilder<String>(
-                      future: _translateWord(_hoveredWord),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Text(
-                            'Translating...',
-                            style: TextStyle(color: Colors.white),
-                          );
-                        }
-                        return Text(
-                          snapshot.data ?? 'Translation failed',
-                          style: const TextStyle(color: Colors.white),
-                        );
-                      },
+                    color: Colors.black54,
+                    child: Text(
+                      _currentCaption.isNotEmpty
+                          ? (_isHovered
+                              ? _translatedCaption // Show translation when hovered.
+                              : _currentCaption) // Show original caption when not hovered.
+                          : "No captions available.",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                ),
+                  if (_isHovered && _translatedCaption.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Display the translation underneath the hovered caption.
+                          Text(
+                            _translatedCaption,
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 16,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              _addToFlashcards(_currentCaption, _translatedCaption);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.redAccent,
+                              backgroundColor: Colors.white,
+                            ),
+                            child: const Text('Add to Flashcards'),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _subtitleWithHover() {
-    return Wrap(
-      children: subtitles.map((word) {
-        return GestureDetector(
-          onTapDown: (details) => _onWordTap(word, details.globalPosition),
-          onTapCancel: _onHoverExit,
-          child: MouseRegion(
-            onEnter: (event) => _onWordHover(word, event.position),
-            onExit: (event) => _onHoverExit(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-              child: Text(
-                word,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.0,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
+class Caption {
+  final String text;
+  final Duration offset;
+  final Duration duration;
 
-  void _onWordHover(String word, Offset position) {
-    setState(() {
-      _hoveredWord = word;
-      _hoverPosition = position;
-      _showTranslation = true;
-    });
-  }
-
-  void _onWordTap(String word, Offset position) {
-    setState(() {
-      _hoveredWord = word;
-      _hoverPosition = position;
-      _showTranslation = true;
-    });
-  }
-
-  void _onHoverExit() {
-    setState(() {
-      _showTranslation = false;
-    });
-  }
-
-  Widget _text(String title, String value) {
-    return RichText(
-      text: TextSpan(
-        text: '$title: ',
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        children: [
-          TextSpan(
-            text: value,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w300,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget get _space => const SizedBox(height: 10);
+  Caption({
+    required this.text,
+    required this.offset,
+    required this.duration,
+  });
 }
