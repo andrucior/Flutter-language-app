@@ -9,7 +9,7 @@ on:
 
 jobs:
   flutter_job:
-    runs-on: macos-latest
+    runs-on: windows-latest
 
     steps:
       # Step 1: Clone the repository
