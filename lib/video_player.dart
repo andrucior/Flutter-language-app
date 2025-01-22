@@ -14,7 +14,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class VideoPlayerScreen extends StatefulWidget {
   final String videoId;
   final String selectedLanguage;
-  const VideoPlayerScreen({super.key, required this.videoId, required this.selectedLanguage});
+  final String targetLanguage;
+  const VideoPlayerScreen({super.key, required this.videoId, required this.selectedLanguage, this.targetLanguage='en'});
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
@@ -28,7 +29,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   String _translatedCaption = '';
   String _selectedWord = '';
   bool _isHovered = false;
-  final List<Map<String, String>> _flashcards = [];
   final String _backendUrl = 'http://localhost:8000/get_captions';
 
   @override
@@ -119,7 +119,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        return response.body;
+        {
+          print(response.body);
+          return response.body;
+          }
       }
     } catch (e) {
       log("Error translating word: $e");
@@ -147,6 +150,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       await docRef.set({
         'caption': caption,
         'translation': translation,
+        'source': widget.selectedLanguage,
+        'target': widget.targetLanguage,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

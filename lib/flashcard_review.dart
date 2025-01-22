@@ -148,7 +148,7 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with Sing
                                 margin: const EdgeInsets.all(16.0),
                                 child: Container(
                                   width: double.infinity,
-                                  height: 250,
+                                  height: 450,
                                   alignment: Alignment.center,
                                   child: isFrontVisible
                                       ? Text(
@@ -160,7 +160,7 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with Sing
                                           textAlign: TextAlign.center,
                                         )
                                       : Transform(
-                                          transform: Matrix4.rotationY(3.14159), // Flip translation to face forward
+                                          transform: Matrix4.rotationY(3.14159), 
                                           alignment: Alignment.center,
                                           child: Text(
                                             flashcard['translation'] ?? '',

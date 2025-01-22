@@ -48,7 +48,33 @@ class _AuthScreenState extends State<AuthScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+                children: [
+                RichText(
+                  text: TextSpan(
+                    text: 'Welcome to LingApp!',
+                    style: TextStyle(
+                      fontSize: 20.0,
+                      color: Colors.black
+                    )
+                  )
+                ),
+                const SizedBox(width: 16.0),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12.0),
+                  child:
+                    Image.asset(
+                      'assets/images/lingAppLogo.jpg',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover
+                      ),
+                    ),
+                  ]
+                ),
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
