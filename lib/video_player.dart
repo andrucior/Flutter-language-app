@@ -13,8 +13,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoId;
-
-  const VideoPlayerScreen({super.key, required this.videoId});
+  final String selectedLanguage;
+  const VideoPlayerScreen({super.key, required this.videoId, required this.selectedLanguage});
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
@@ -26,6 +26,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   List<Caption> _captions = [];
   String _currentCaption = '';
   String _translatedCaption = '';
+  String _selectedWord = '';
   bool _isHovered = false;
   final List<Map<String, String>> _flashcards = [];
   final String _backendUrl = 'http://localhost:8000/get_captions';
@@ -55,7 +56,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _fetchCaptions() async {
-    final url = Uri.parse('$_backendUrl?video_id=${widget.videoId}&language=es');
+    final url = Uri.parse('$_backendUrl?video_id=${widget.videoId}&language=${widget.selectedLanguage}');
 
     setState(() {
       _captions = [];
@@ -113,7 +114,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Future<String> _translateWord(String word) async {
     final backend = 'http://localhost:8000/get_translation';
-    final url = Uri.parse('$backend?word=$word&target=en');
+    final url = Uri.parse('$backend?word=$word&target=en&source=${widget.selectedLanguage}');
 
     try {
       final response = await http.get(url);
@@ -127,42 +128,36 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _addToFlashcards(String caption, String translation) async {
-  try {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in to save flashcards.')),
+        const SnackBar(content: Text("User not logged in.")),
       );
       return;
     }
 
-    final flashcardData = {
-      'caption': caption,
-      'translation': translation,
-      'createdAt': FieldValue.serverTimestamp(),
-    };
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('flashcards')
+          .doc();
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid) // Store under the specific user's ID
-        .collection('flashcards')
-        .add(flashcardData);
+      await docRef.set({
+        'caption': caption,
+        'translation': translation,
+      });
 
-    log('Flashcard saved to Firestore: $caption -> $translation');
-    setState(() {
-      _flashcards.add({'caption': caption, 'translation': translation});
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Flashcard saved!')),
-    );
-  } catch (e) {
-    log('Error saving flashcard: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Failed to save flashcard.')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Added to Flashcards!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving flashcard: $e")),
+      );
+    }
   }
-}
 
 
   @override
@@ -199,13 +194,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     children: _currentCaption.isNotEmpty
                         ? _currentCaption
                             .replaceAll(RegExp(r'[^\w\sÀ-ÿ]'), '') // Remove punctuation.
-                            .split(' ')
+                            .split(RegExp(r' |\n'))
+                            .where((word) => word.isNotEmpty)
                             .map((word) {
                               return TextButton(
                                 onPressed: () async {
     
                                   setState(() {
                                     _translatedCaption = "Translating..."; // Show translating status.
+                                    _selectedWord = word;
                                   });
 
                                 try {
@@ -243,7 +240,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                           }).toList()
                         : [
                             const Text(
-                              "No captions available.",
+                              "-",
                               style: TextStyle(color: Colors.white, fontSize: 18),
                             ),
                           ],
@@ -275,7 +272,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   if (_isHovered && _translatedCaption.isNotEmpty)
                     ElevatedButton(
                       onPressed: () {
-                        _addToFlashcards(_currentCaption, _translatedCaption);
+                        _addToFlashcards(_selectedWord, _translatedCaption);
                       },
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.blue[600],

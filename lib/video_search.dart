@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'video_player.dart';
+import 'flashcard_review.dart';
 
 // Video searching view
 // Fetching videos from flask api
@@ -79,7 +80,7 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
             TextField(
               controller: _searchController,
               style: const TextStyle(
-                color: Colors.white,
+                color: Colors.black,
                 fontSize: 16,
               ),
               decoration: const InputDecoration(
@@ -96,6 +97,17 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
                 }
               },
               child: const Text('Search'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (ctx) => const FlashcardReviewScreen(),
+                  ),
+                );
+              },
+              child: const Text("Review Flashcards"),
             ),
             const SizedBox(height: 16),
             if (_isLoading)
@@ -139,7 +151,7 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
                       ),
                       trailing: const Icon(
                         Icons.play_arrow_rounded,
-                        color: Colors.redAccent,
+                        color: Colors.blue,
                         size: 28.0,
                       ),
                       onTap: () {
@@ -147,8 +159,10 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => VideoPlayerScreen(
-                                videoId: video['videoId']),
-                          ),
+                                videoId: video['videoId'],
+                                selectedLanguage: _selectedLanguage,
+                              ),
+                            ),
                         );
                       },
                     );
