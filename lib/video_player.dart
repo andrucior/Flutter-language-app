@@ -7,14 +7,15 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Video view
-// Fetching captions, translation (from flask api)
-// Adding to flashcards (in firebase databse)
-
 class VideoPlayerScreen extends StatefulWidget {
   final String videoId;
-
-  const VideoPlayerScreen({super.key, required this.videoId});
+  final String selectedLanguage;
+  final String targetLanguage;
+  const VideoPlayerScreen(
+      {super.key,
+        required this.videoId,
+        required this.selectedLanguage,
+        this.targetLanguage = 'en'});
 
   @override
   State<VideoPlayerScreen> createState() => _VideoPlayerScreenState();
@@ -24,11 +25,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late YoutubePlayerController _controller;
   late Timer _timer;
   List<Caption> _captions = [];
-  String _currentCaption = '';
-  String _translatedCaption = '';
-  bool _isHovered = false;
-  final List<Map<String, String>> _flashcards = [];
-  final String _backendUrl = 'http://localhost:8000/get_captions';
+  ValueNotifier<String> _currentCaptionNotifier = ValueNotifier('');
+  ValueNotifier<String> _translatedCaptionNotifier = ValueNotifier('');
+  String _selectedWord = '';
+  final String _backendUrl = "http://192.168.1.104:8000/get_captions";
 
   @override
   void initState() {
@@ -44,19 +44,22 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       ),
     );
     _fetchCaptions();
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (_) => _syncCaptions());
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _syncCaptions());
   }
 
   @override
   void dispose() {
     _controller.close();
     _timer.cancel();
+    _currentCaptionNotifier.dispose();
+    _translatedCaptionNotifier.dispose();
     super.dispose();
   }
 
   Future<void> _fetchCaptions() async {
-    final url = Uri.parse('$_backendUrl?video_id=${widget.videoId}&language=es');
-
+    final url = Uri.parse(
+        '$_backendUrl?video_id=${widget.videoId}&language=${widget
+            .selectedLanguage}');
     setState(() {
       _captions = [];
     });
@@ -66,14 +69,17 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
       if (response.statusCode == 200) {
         final List<dynamic> captionsData = json.decode(response.body);
+
         setState(() {
           _captions = captionsData.map<Caption>((caption) {
             return Caption(
               text: caption['text'],
               offset: Duration(milliseconds: (caption['start'] * 1000).toInt()),
-              duration: Duration(milliseconds: (caption['duration'] * 1000).toInt()),
+              duration: Duration(
+                  milliseconds: (caption['duration'] * 1000).toInt()),
             );
           }).toList();
+          _currentCaptionNotifier.value = _captions[0].text;
         });
       } else {
         setState(() {
@@ -92,81 +98,82 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (_captions.isEmpty) return;
 
     try {
-      final currentTimeMillis = (await _controller.currentTime * 1000).toInt();
+      final currentTimeMillis =
+      (await _controller.currentTime * 1000).toInt();
       final currentTime = Duration(milliseconds: currentTimeMillis);
-
       final caption = _captions.firstWhere(
-        (c) => c.offset <= currentTime && c.offset + c.duration > currentTime,
-        orElse: () => Caption(text: '', offset: Duration.zero, duration: Duration.zero),
+            (c) =>
+        c.offset <= currentTime && c.offset + c.duration > currentTime,
+        orElse: () =>
+            Caption(text: '', offset: Duration.zero, duration: Duration.zero),
       );
 
-      if (caption.text != _currentCaption) {
-        setState(() {
-          _currentCaption = caption.text;
-          _translatedCaption = '';
-        });
+      if (caption.text != _currentCaptionNotifier.value) {
+        _currentCaptionNotifier.value = caption.text;
       }
     } catch (e) {
       log('Error syncing captions: $e');
     }
   }
 
-  Future<String> _translateWord(String word) async {
-    final backend = 'http://localhost:8000/get_translation';
-    final url = Uri.parse('$backend?word=$word&target=en');
+  Future<void> _translateWord(String word) async {
+    final backend = 'http://192.168.1.104:8000/get_translation';
+    final url = Uri.parse(
+        '$backend?word=$word&target=en&source=${widget.selectedLanguage}');
 
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        return response.body;
+        _translatedCaptionNotifier.value = response.body;
+        _controller.pauseVideo();
+        await Future.delayed(Duration(seconds: 1));
+        _controller.playVideo();
+        return;
       }
     } catch (e) {
       log("Error translating word: $e");
     }
-    return "Translation failed";
+    _translatedCaptionNotifier.value = "Translation failed";
   }
 
   Future<void> _addToFlashcards(String caption, String translation) async {
-  try {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must be logged in to save flashcards.')),
+        const SnackBar(content: Text("User not logged in.")),
       );
       return;
     }
 
-    final flashcardData = {
-      'caption': caption,
-      'translation': translation,
-      'createdAt': FieldValue.serverTimestamp(),
-    };
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('flashcards')
+          .doc();
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid) // Store under the specific user's ID
-        .collection('flashcards')
-        .add(flashcardData);
+      await docRef.set({
+        'caption': caption,
+        'translation': translation,
+        'source': widget.selectedLanguage,
+        'target': widget.targetLanguage,
+      });
 
-    log('Flashcard saved to Firestore: $caption -> $translation');
-    setState(() {
-      _flashcards.add({'caption': caption, 'translation': translation});
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Flashcard saved!')),
-    );
-  } catch (e) {
-    log('Error saving flashcard: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Failed to save flashcard.')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Added to Flashcards!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving flashcard: $e")),
+      );
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
+    final gapHeight = 4.0; // Adjust gap to avoid overflow
+
     return YoutubePlayerScaffold(
       controller: _controller,
       builder: (context, player) => Scaffold(
@@ -176,118 +183,81 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         body: Column(
           children: [
             player,
-            const SizedBox(height: 16),
-            MouseRegion(
-              onEnter: (_) async {
-                setState(() {
-                  _isHovered = true; // Hover effect triggers translation availability.
-                });
-              },
-              onExit: (_) {
-                setState(() {
-                  _isHovered = false;
-                  _translatedCaption = ''; // Clear translation on exit.
-                });
-              },
-              child: Column(
-                children: [
-                  // Original caption split into word tiles (buttons).
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8.0, // Space between word tiles.
-                    runSpacing: 8.0, // Space between lines of word tiles.
-                    children: _currentCaption.isNotEmpty
-                        ? _currentCaption
-                            .replaceAll(RegExp(r'[^\w\sÀ-ÿ]'), '') // Remove punctuation.
-                            .split(' ')
-                            .map((word) {
-                              return TextButton(
-                                onPressed: () async {
-    
-                                  setState(() {
-                                    _translatedCaption = "Translating..."; // Show translating status.
-                                  });
+            const SizedBox(height: 4), // Reduced height for player
+            SizedBox(
+              height: 200,
+              child:
+              Expanded(
+                child: SingleChildScrollView(
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: _currentCaptionNotifier,
+                    builder: (context, caption, _) {
+                    // Remove unwanted characters (commas, dots, newlines, etc.)
+                      caption = caption
+                          .replaceAll(RegExp(r'[^\w\sÀ-ÿ]'), '') // Remove unwanted punctuation
+                          .split(RegExp(r' |\n')) // Split by space or newline
+                          .where((word) => word.isNotEmpty) // Remove empty words
+                          .join(' ');
 
-                                try {
-                                  await _controller.pauseVideo();
-                                  final translation = await _translateWord(word);
-                                  if (mounted) {
-                                    setState(() {
-                                      _translatedCaption = 'Translation $translation';
-                                    });
-                                  }
-                                } catch (e) {
-                                  log("Error translating word: $e");
-                                  if (mounted) {
-                                    setState(() {
-                                      _translatedCaption = 'Translation failed.';
-                                    });
-                                  }
-                                }
-                                finally {
-                                  await _controller.playVideo();
-                                }
+                      return Padding(
+                        padding: const EdgeInsets.all(2.0),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: caption
+                              .split(' ')
+                              .map(
+                                (word) => GestureDetector(
+                              onTap: () {
+                                _selectedWord = word;
+                                _translateWord(_selectedWord);
                               },
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                                backgroundColor: Colors.blue[600],
-                              ),
-                              child: Text(
-                                word,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
+                              child: Chip(
+                                label: Text(word),
+                                backgroundColor: Colors.blue[500], // Background color
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12), // Border radius
                                 ),
+                                side: BorderSide.none, // Remove border color
                               ),
-                            );
-                          }).toList()
-                        : [
-                            const Text(
-                              "No captions available.",
-                              style: TextStyle(color: Colors.white, fontSize: 18),
                             ),
-                          ],
+                          )
+                              .toList(),
+                        ),
+                      );
+                    },
                   ),
-                  // Translated caption displayed underneath.
-                  if (_isHovered && _translatedCaption.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(8.0), // Optional padding around the text
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12.0)
-                        ),
-                        child: Text(
-                          _translatedCaption,
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
-                            fontStyle: FontStyle.italic,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-
-                  // Add to flashcards button.
-                  if (_isHovered && _translatedCaption.isNotEmpty)
-                    ElevatedButton(
-                      onPressed: () {
-                        _addToFlashcards(_currentCaption, _translatedCaption);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.blue[600],
-                        backgroundColor: Colors.white,
-                      ),
-                      child: const Text('Add to Flashcards'),
-                    ),
-                ],
+                ),
               ),
             ),
-
-
+            ValueListenableBuilder<String>(
+              valueListenable: _translatedCaptionNotifier,
+              builder: (context, translation, _) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.blue[50],
+                  alignment: Alignment.topCenter,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        translation.isEmpty
+                            ? 'Tap a word to translate'
+                            : 'Translation: $translation',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      if (translation.isNotEmpty)
+                        ElevatedButton(
+                          onPressed: () =>
+                              _addToFlashcards(_selectedWord, translation),
+                          child: const Text('Add to Flashcards'),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -295,7 +265,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 }
 
-class Caption {
+  class Caption {
   final String text;
   final Duration offset;
   final Duration duration;
