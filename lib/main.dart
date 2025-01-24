@@ -6,7 +6,7 @@ import 'video_search.dart';
 import 'auth_screen.dart';
 import 'firebase_options.dart';
 
-// Main view - logging in, registering and redirecting to video searching
+// Main view - logging in, registering and redirecting to video searching, tesrt
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
