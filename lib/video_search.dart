@@ -18,7 +18,7 @@ class VideoSearchScreen extends StatefulWidget {
 
 class _VideoSearchScreenState extends State<VideoSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final String _backendUrl = "http://localhost:8000/search_videos"; // Backend URL
+  final String _backendUrl = "http://192.168.1.104:8000/search_videos"; // Backend URL
   List<dynamic> _videos = [];
   bool _isLoading = false;
   String _selectedLanguage = "es"; // Default language is Spanish
