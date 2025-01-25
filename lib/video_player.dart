@@ -28,7 +28,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   ValueNotifier<String> _currentCaptionNotifier = ValueNotifier('');
   ValueNotifier<String> _translatedCaptionNotifier = ValueNotifier('');
   String _selectedWord = '';
-  final String _backendUrl = "http://192.168.1.104:8000/get_captions";
+  final String _backendUrl = "https://127.0.0.1:8000"; // due to youtube api
 
   @override
   void initState() {
@@ -58,7 +58,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Future<void> _fetchCaptions() async {
     final url = Uri.parse(
-        '$_backendUrl?video_id=${widget.videoId}&language=${widget
+        '$_backendUrl/get_captions?video_id=${widget.videoId}&language=${widget
             .selectedLanguage}');
     setState(() {
       _captions = [];
@@ -117,7 +117,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _translateWord(String word) async {
-    final backend = 'http://192.168.1.104:8000/get_translation';
+    final backend = '$_backendUrl/get_translation';
     final url = Uri.parse(
         '$backend?word=$word&target=en&source=${widget.selectedLanguage}');
 
@@ -126,7 +126,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       if (response.statusCode == 200) {
         _translatedCaptionNotifier.value = response.body;
         _controller.pauseVideo();
-        await Future.delayed(Duration(seconds: 1));
+        await Future.delayed(Duration(milliseconds: 500));
         _controller.playVideo();
         return;
       }
@@ -195,7 +195,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     // Remove unwanted characters (commas, dots, newlines, etc.)
                       caption = caption
                           .replaceAll(RegExp(r'[^\w\sÀ-ÿ]'), '') // Remove unwanted punctuation
-                          .split(RegExp(r' |\n')) // Split by space or newline
+                          .split(RegExp(r'[ \n]')) // Split by space or newline
                           .where((word) => word.isNotEmpty) // Remove empty words
                           .join(' ');
 
