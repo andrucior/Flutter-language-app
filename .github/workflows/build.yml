@@ -28,7 +28,7 @@ jobs:
 
       # Step 4: Build Flutter Web
       - name: Build Flutter Web
-        run: flutter build web
+        run: flutter build web --base-href "$FLUTTER_BASE_HREF"
 
       # Step 5: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
