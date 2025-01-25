@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:http/http.dart' as http;
@@ -28,7 +29,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   ValueNotifier<String> _currentCaptionNotifier = ValueNotifier('');
   ValueNotifier<String> _translatedCaptionNotifier = ValueNotifier('');
   String _selectedWord = '';
-  final String _backendUrl = "https://127.0.0.1:8000"; // due to youtube api
+  final String _backendUrl = "http://192.168.1.104:8000"; // due to youtube api
 
   @override
   void initState() {
@@ -125,9 +126,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         _translatedCaptionNotifier.value = response.body;
-        _controller.pauseVideo();
-        await Future.delayed(Duration(milliseconds: 500));
-        _controller.playVideo();
         return;
       }
     } catch (e) {
@@ -172,7 +170,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final gapHeight = 4.0; // Adjust gap to avoid overflow
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
 
     return YoutubePlayerScaffold(
       controller: _controller,
@@ -182,55 +181,54 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         ),
         body: Column(
           children: [
-            player,
-            const SizedBox(height: 4), // Reduced height for player
             SizedBox(
-              height: 200,
-              child:
-              Expanded(
-                child: SingleChildScrollView(
-                  child: ValueListenableBuilder<String>(
-                    valueListenable: _currentCaptionNotifier,
-                    builder: (context, caption, _) {
-                    // Remove unwanted characters (commas, dots, newlines, etc.)
-                      caption = caption
-                          .replaceAll(RegExp(r'[^\w\sÀ-ÿ]'), '') // Remove unwanted punctuation
-                          .split(RegExp(r'[ \n]')) // Split by space or newline
-                          .where((word) => word.isNotEmpty) // Remove empty words
-                          .join(' ');
+              height: screenWidth < 600 ? screenHeight / 3 : screenHeight / 2,
+              width: screenWidth,
+              child: player, // YouTube player widget
+            ),
+            const SizedBox(height: 4), // Reduced height for spacing
+            SingleChildScrollView(
+                child: ValueListenableBuilder<String>(
+                  valueListenable: _currentCaptionNotifier,
+                  builder: (context, caption, _) {
+                    // Clean up the caption text
+                    caption = caption
+                        .replaceAll(RegExp(r'[^\w\sÀ-ÿ]'), '') // Remove unwanted punctuation
+                        .split(RegExp(r'[ \n]')) // Split by space or newline
+                        .where((word) => word.isNotEmpty) // Remove empty words
+                        .join(' ');
 
-                      return Padding(
-                        padding: const EdgeInsets.all(2.0),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.center,
-                          children: caption
-                              .split(' ')
-                              .map(
-                                (word) => GestureDetector(
-                              onTap: () {
-                                _selectedWord = word;
-                                _translateWord(_selectedWord);
-                              },
-                              child: Chip(
-                                label: Text(word),
-                                backgroundColor: Colors.blue[500], // Background color
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12), // Border radius
-                                ),
-                                side: BorderSide.none, // Remove border color
+                    return Padding(
+                      padding: const EdgeInsets.all(2.0),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: caption
+                            .split(' ')
+                            .map(
+                              (word) => GestureDetector(
+                            onTap: () {
+                              _selectedWord = word;
+                              _translateWord(_selectedWord);
+                            },
+                            child: Chip(
+                              label: Text(word),
+                              backgroundColor: Colors.blue[500],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                              side: BorderSide.none,
                             ),
-                          )
-                              .toList(),
-                        ),
-                      );
-                    },
-                  ),
+                          ),
+                        )
+                            .toList(),
+                      ),
+                    );
+                  },
                 ),
               ),
-            ),
+            const SizedBox(height: 50),
             ValueListenableBuilder<String>(
               valueListenable: _translatedCaptionNotifier,
               builder: (context, translation, _) {

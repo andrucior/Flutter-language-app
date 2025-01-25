@@ -4,9 +4,8 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'video_player.dart';
-import 'flashcard_review.dart';
 
-// Video searching view
+// Video search view
 // Fetching videos from flask api
 
 class VideoSearchScreen extends StatefulWidget {
@@ -18,12 +17,13 @@ class VideoSearchScreen extends StatefulWidget {
 
 class _VideoSearchScreenState extends State<VideoSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final String _backendUrl = "https://flutter-language-app-api.onrender.com"; // Backend URL
+  final String _backendUrl = "http://192.168.1.104:8000"; // Backend URL
   List<dynamic> _videos = [];
   bool _isLoading = false;
   String _selectedLanguage = "es"; // Default language is Spanish
 
   Future<void> _searchVideos(String query) async {
+    print(query);
     setState(() {
       _isLoading = true;
       _videos = [];
@@ -32,15 +32,17 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
     final url = Uri.parse(
         '$_backendUrl/search_videos?query=$query&language=$_selectedLanguage&max_results=10');
 
+    print(url);
     try {
       final response = await http.get(url);
-      print(response.toString());
       if (response.statusCode == 200) {
         setState(() {
           _videos = json.decode(response.body);
+          print(response.body);
         });
       } else {
         log('Error: ${response.body}');
+        print(response.body);
       }
     } catch (e) {
       log('Error: $e');
@@ -96,18 +98,12 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
                   _searchVideos(query);
                 }
               },
-              child: const Text('Search'),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (ctx) => const FlashcardReviewScreen(),
-                  ),
-                );
-              },
-              child: const Text("Review Flashcards"),
+              child: const Text(
+                  'Search',
+                  style:  const TextStyle(
+                    color: Colors.blueAccent,
+                  )
+              ),
             ),
             const SizedBox(height: 16),
             if (_isLoading)

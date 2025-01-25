@@ -9,7 +9,8 @@ class FlashcardReviewScreen extends StatefulWidget {
   State<FlashcardReviewScreen> createState() => _FlashcardReviewScreenState();
 }
 
-class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with SingleTickerProviderStateMixin {
+class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
+    with SingleTickerProviderStateMixin {
   List<Map<String, String>> _flashcards = [];
   bool _isLoading = true;
   int _currentIndex = 0;
@@ -23,7 +24,6 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with Sing
     super.initState();
     _fetchFlashcards();
 
-    // Initialize animation controllers
     _controller = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -73,6 +73,32 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with Sing
     }
   }
 
+  Future<void> _addFlashcard(String caption, String translation) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        throw Exception("No user logged in");
+      }
+
+      final newFlashcard = {'caption': caption, 'translation': translation};
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('flashcards')
+          .add(newFlashcard);
+
+      setState(() {
+        _flashcards.add(newFlashcard);
+      });
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error adding flashcard: $error")),
+      );
+    }
+  }
+
   void _showNextFlashcard({required bool isKnown}) {
     setState(() {
       _isFlipped = false;
@@ -80,8 +106,7 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with Sing
       if (_currentIndex < _flashcards.length - 1) {
         _currentIndex++;
       } else {
-        // If no flashcards are left, display completion message
-        _currentIndex++; // Move beyond the last index
+        _currentIndex++;
       }
     });
   }
@@ -101,6 +126,57 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with Sing
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _showAddFlashcardDialog() {
+    final captionController = TextEditingController();
+    final translationController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Add Flashcard"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: captionController,
+                decoration: const InputDecoration(labelText: "Caption"),
+              ),
+              TextField(
+                controller: translationController,
+                decoration: const InputDecoration(labelText: "Translation"),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final caption = captionController.text.trim();
+                final translation = translationController.text.trim();
+
+                if (caption.isNotEmpty && translation.isNotEmpty) {
+                  await _addFlashcard(caption, translation);
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please fill in both fields"),
+                    ),
+                  );
+                }
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -139,9 +215,9 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with Sing
                   direction: DismissDirection.horizontal,
                   onDismissed: (direction) {
                     if (direction == DismissDirection.endToStart) {
-                      _showNextFlashcard(isKnown: true); // Swipe left -> I know this word
+                      _showNextFlashcard(isKnown: true);
                     } else if (direction == DismissDirection.startToEnd) {
-                      _showNextFlashcard(isKnown: false); // Swipe right -> Prefer to review
+                      _showNextFlashcard(isKnown: false);
                     }
                   },
                   background: Container(
@@ -228,14 +304,18 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> with Sing
                 child: const Text(
                   "Prefer to review",
                   style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
+                    fontSize: 16,
+                    color: Colors.black,
                   ),
                 ),
               ),
             ],
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddFlashcardDialog,
+        child: const Icon(Icons.add),
       ),
     );
   }
