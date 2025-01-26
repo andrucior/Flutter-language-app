@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'main.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -28,6 +29,11 @@ class AuthScreenState extends State<AuthScreen> {
         await _auth.signInWithEmailAndPassword(email: email, password: password);
       } else {
         await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      }
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
       }
     } on FirebaseAuthException catch (error) {
       if (mounted) {
