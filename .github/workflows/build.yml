@@ -26,13 +26,21 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # Step 4: Build Flutter Web
+      # Step 4: Apply Dart Fixes
+      - name: Apply Dart Fixes
+        run: dart fix --apply
+        
+      # Step 5: Analyze code
+      - name: Analyze Dart Code
+        run: flutter analyze
+
+      # Step 6: Build Flutter Web
       - name: Build Flutter Web
         env:
           FLUTTER_BASE_HREF: '/Flutter-language-app/' 
         run: flutter build web --base-href "$FLUTTER_BASE_HREF"
 
-      # Step 5: Deploy to GitHub Pages
+      # Step 7: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         if: github.event_name == 'push'
         uses: peaceiris/actions-gh-pages@v3
