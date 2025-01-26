@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:http/http.dart' as http;
@@ -26,8 +25,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late YoutubePlayerController _controller;
   late Timer _timer;
   List<Caption> _captions = [];
-  ValueNotifier<String> _currentCaptionNotifier = ValueNotifier('');
-  ValueNotifier<String> _translatedCaptionNotifier = ValueNotifier('');
+  final ValueNotifier<String> _currentCaptionNotifier = ValueNotifier('');
+  final ValueNotifier<String> _translatedCaptionNotifier = ValueNotifier('');
   String _selectedWord = '';
   final String _backendUrl = "http://192.168.1.104:8000"; // due to youtube api
 
@@ -158,13 +157,17 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         'target': widget.targetLanguage,
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Added to Flashcards!')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to Flashcards!')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving flashcard: $e")),
-      );
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error occurred while saving')),
+          );
+        }
     }
   }
 
@@ -213,7 +216,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               _translateWord(_selectedWord);
                             },
                             child: Chip(
-                              label: Text(word),
+                              label: Text(
+                                  word,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
+                                ),
                               backgroundColor: Colors.blue[500],
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),

@@ -67,9 +67,11 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error loading flashcards: $error")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading flashcards: $error")),
+        );
+      }
     }
   }
 
@@ -93,9 +95,11 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
         _flashcards.add(newFlashcard);
       });
     } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error adding flashcard: $error")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error adding flashcard: $error")),
+        );
+      }
     }
   }
 
@@ -161,9 +165,21 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
                 final translation = translationController.text.trim();
 
                 if (caption.isNotEmpty && translation.isNotEmpty) {
-                  await _addFlashcard(caption, translation);
+                  // Close the dialog before making the async call.
                   Navigator.pop(context);
+
+                  // Access the ScaffoldMessenger outside the async gap.
+                  final messenger = ScaffoldMessenger.of(context);
+
+                  try {
+                    await _addFlashcard(caption, translation);
+                  } catch (error) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text("Error adding flashcard: $error")),
+                    );
+                  }
                 } else {
+                  // No async gap here, so it's safe to use `context`.
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text("Please fill in both fields"),
@@ -178,6 +194,7 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +228,7 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
                 final isFrontVisible = _flipAnimation.value <= 0.5;
                 final flashcard = _flashcards[_currentIndex];
                 return Dismissible(
-                  key: Key('flashcard_${_currentIndex}'),
+                  key: Key('flashcard_$_currentIndex'),
                   direction: DismissDirection.horizontal,
                   onDismissed: (direction) {
                     if (direction == DismissDirection.endToStart) {
