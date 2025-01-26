@@ -29,9 +29,9 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         await _auth.createUserWithEmailAndPassword(email: email, password: password);
       }
-    } catch (error) {
+    } on FirebaseAuthException catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+        SnackBar(content: Text(error.message ?? 'An error occurred')),
       );
     } finally {
       setState(() {
@@ -46,66 +46,65 @@ class _AuthScreenState extends State<AuthScreen> {
       appBar: AppBar(
         title: Text(_isLogin ? 'Login' : 'Register'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                RichText(
-                  text: TextSpan(
-                    text: 'Welcome to LingApp!',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      color: Colors.black
-                    )
-                  )
-                ),
-                const SizedBox(width: 16.0),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12.0),
-                  child:
-                    Image.asset(
-                      'assets/images/lingAppLogo.jpg',
+                  const Text(
+                    'Welcome to LingApp!',
+                    style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 16.0),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12.0),
+                    child: Image.asset(
+                      'assets/lingAppLogo.png',
                       width: 80,
                       height: 80,
-                      fit: BoxFit.cover
-                      ),
+                      fit: BoxFit.cover,
                     ),
-                  ]
-                ),
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: InputDecoration(labelText: 'Password'),
-            ),
-            const SizedBox(height: 20),
-            if (_isLoading)
-              CircularProgressIndicator()
-            else
-              ElevatedButton(
-                onPressed: _submitAuthForm,
-                child: Text(_isLogin ? 'Login' : 'Register'),
+                  ),
+                ],
               ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _isLogin = !_isLogin;
-                });
-              },
-              child: Text(_isLogin
-                  ? 'Don’t have an account? Register here!'
-                  : 'Already have an account? Login here!'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Password'),
+              ),
+              const SizedBox(height: 20),
+              if (_isLoading)
+                const CircularProgressIndicator()
+              else
+                ElevatedButton(
+                  onPressed: _submitAuthForm,
+                  child: Text(_isLogin ? 'Login' : 'Register'),
+                ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isLogin = !_isLogin;
+                  });
+                },
+                child: Text(
+                  _isLogin
+                      ? 'Don’t have an account? Register here!'
+                      : 'Already have an account? Login here!',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
