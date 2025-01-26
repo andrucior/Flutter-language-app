@@ -12,10 +12,10 @@ class VideoSearchScreen extends StatefulWidget {
   const VideoSearchScreen({super.key});
 
   @override
-  _VideoSearchScreenState createState() => _VideoSearchScreenState();
+  VideoSearchScreenState createState() => VideoSearchScreenState();
 }
 
-class _VideoSearchScreenState extends State<VideoSearchScreen> {
+class VideoSearchScreenState extends State<VideoSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final String _backendUrl = "http://192.168.1.104:8000"; // Backend URL
   List<dynamic> _videos = [];
@@ -23,7 +23,6 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
   String _selectedLanguage = "es"; // Default language is Spanish
 
   Future<void> _searchVideos(String query) async {
-    print(query);
     setState(() {
       _isLoading = true;
       _videos = [];
@@ -32,17 +31,14 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
     final url = Uri.parse(
         '$_backendUrl/search_videos?query=$query&language=$_selectedLanguage&max_results=10');
 
-    print(url);
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         setState(() {
           _videos = json.decode(response.body);
-          print(response.body);
         });
       } else {
         log('Error: ${response.body}');
-        print(response.body);
       }
     } catch (e) {
       log('Error: $e');
@@ -100,7 +96,7 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
               },
               child: const Text(
                   'Search',
-                  style:  const TextStyle(
+                  style:  TextStyle(
                     color: Colors.blueAccent,
                   )
               ),

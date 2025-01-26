@@ -61,19 +61,28 @@ class YoutubePlayerDemoApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  Future<void> _logout(BuildContext context) async {
+  @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  Future<void> _logout() async {
     try {
       await FirebaseAuth.instance.signOut();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const AuthScreen()),
-      );
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AuthScreen()),
+        );
+      }
     } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Logout failed: $error')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $error')),
+        );
+      }
     }
   }
 
@@ -98,7 +107,7 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context),
+            onPressed: () => _logout(),
           ),
         ],
       ),
@@ -171,7 +180,6 @@ class HomeScreen extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Calculate the size to fit one quarter of the available screen space
-        final double width = constraints.maxWidth;
         final double height = constraints.maxHeight;
         return GestureDetector(
           onTap: onTap,
