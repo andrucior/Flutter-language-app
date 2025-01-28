@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'main.dart';
+import 'package:gif_view/gif_view.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -70,8 +71,8 @@ class AuthScreenState extends State<AuthScreen> {
                   const SizedBox(width: 16.0),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12.0),
-                    child: Image.asset(
-                      'assets/lingAppLogo.png',
+                    child: GifView.asset(
+                      '2576ab3a50ccdae861fc5abcfa20a1dc.gif',
                       width: 80,
                       height: 80,
                       fit: BoxFit.cover,
