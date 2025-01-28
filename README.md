@@ -5,9 +5,9 @@ LingApp is a cross-platform language immersion application designed to help user
 **Features**
 
 Current Features:
--_YouTube Video Search:_ Search and browse YouTube videos in the target language to improve listening comprehension. Subtitles displayed in real-time with option to translate and add a word to flashcards (Note: subtitles are not available on deployed version due to Youtube API restrictions, to use this feature you have to run the app and server locally, more on this: https://github.com/jdepoix/youtube-transcript-api/issues/303)
+-_YouTube Video Search:_ Search and browse YouTube videos in the target language to improve listening comprehension. Subtitles displayed in real-time with the option to translate and add a word to flashcards (Note: subtitles are not available on the deployed version due to Youtube API restrictions, to use this feature you have to run the app and server locally, more on this: https://github.com/jdepoix/youtube-transcript-api/issues/303)
 
--_Spotify Song Search:_ Search for songs using the Spotify API, with song metadata retrieved from Genius. Note: Podcasts and Spotify playback are not yet implemented. Subtitles are retrieved for the whole song and paginated (Note: this feature also works only locally, since the app would need to be Spotify-verified first)
+-_Spotify Song Search:_ Search for songs using the Spotify API, with song metadata retrieved from Genius. Note: Podcasts and Spotify playback have not yet been implemented. Subtitles are retrieved for the whole song and paginated (Note: this feature also works only locally, since the app would need to be Spotify-verified first)
 
 -_Flashcard Review_: Save and review vocabulary words as interactive flashcards.
 
@@ -15,9 +15,9 @@ Current Features:
 
 **Cross-Platform Support:**
 
-Fully supported on Android and web (Note: use "flutter run -d chrome --web-renderer html" when run locally on web).
-Should be compatible with iOS (requires macOS for testing).
-Partial support for Windows (flashcards).
+-Fully supported on Android and web (Note: use "flutter run -d chrome --web-renderer html" when run locally on web).
+-Should be compatible with iOS (requires macOS for testing).
+-Partial support for Windows (only flashcards).
 
 **Planned Features:**
 
@@ -30,9 +30,9 @@ Partial support for Windows (flashcards).
 **Screens and Navigation**
 
 Main Screen (Home)
-Review Flashcards: Opens the flashcard review module for practicing saved vocabulary.
+Review Flashcards: Opens the flashcard review module to practice saved vocabulary.
 Read Fun Facts: A placeholder screen for content to be developed in the future.
-Browse Videos: Opens the YouTube video search module for discovering content in the target language.
+Browse Videos: Opens the YouTube video search module to discover content in the target language.
 Spotify: Allows users to search for songs in the selected language. (Playback not implemented.)
 
 **Authentication**
