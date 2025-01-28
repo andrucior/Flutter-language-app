@@ -199,6 +199,7 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
   @override
   Widget build(BuildContext context) {
     final bool hasCompletedReview = _currentIndex >= _flashcards.length;
+    double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
       appBar: AppBar(
@@ -209,7 +210,8 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
           : hasCompletedReview
           ? const Center(
         child: Text(
-          "You've reviewed all the flashcards! Keep learning to meet your language goals!",
+          "You've reviewed all the flashcards! Keep learning to meet your "
+              "language goals!",
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 20,
@@ -263,7 +265,7 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen>
                         margin: const EdgeInsets.all(16.0),
                         child: Container(
                           width: double.infinity,
-                          height: 450,
+                          height: height / 3,
                           alignment: Alignment.center,
                           child: isFrontVisible
                               ? Text(

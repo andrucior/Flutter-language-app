@@ -7,6 +7,8 @@ import 'auth_screen.dart';
 import 'firebase_options.dart';
 import 'flashcard_review.dart';
 import 'to_be_developed.dart';
+import 'package:gif_view/gif_view.dart';
+import 'spotify_search.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,11 +96,14 @@ class HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset(
-              'assets/lingAppLogo.png',
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12.0),
+              child: GifView.asset(
+                '2576ab3a50ccdae861fc5abcfa20a1dc.gif',
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+              ),
             ),
             const SizedBox(width: 8.0),
             const Text('Home'),
@@ -140,7 +145,7 @@ class HomeScreenState extends State<HomeScreen> {
                 _buildTile(
                   context,
                   icon: Icons.lightbulb,
-                  label: 'Read Fun Facts',
+                  label: 'Grammar rules',
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => ToBeDevelopedScreen()),
@@ -163,7 +168,7 @@ class HomeScreenState extends State<HomeScreen> {
                   label: 'Spotify',
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => ToBeDevelopedScreen()),
+                      MaterialPageRoute(builder: (_) => SongSearchScreen()),
                     );
                   },
                 ),
