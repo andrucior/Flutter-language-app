@@ -7,7 +7,7 @@ LingApp is a cross-platform language immersion application designed to help user
 Current Features:
 -_YouTube Video Search:_ Search and browse YouTube videos in the target language to improve listening comprehension. Subtitles displayed in real-time with option to translate and add a word to flashcards (Note: subtitles are not available on deployed version due to Youtube API restrictions, to use this feature you have to run the app and server locally, more on this: https://github.com/jdepoix/youtube-transcript-api/issues/303)
 
--_Spotify Song Search:_ Search for songs using the Spotify API, with song metadata retrieved from Genius. Note: Podcasts and Spotify playback are not yet implemented. Subtitles are retrieved for the whole song and paginated.
+-_Spotify Song Search:_ Search for songs using the Spotify API, with song metadata retrieved from Genius. Note: Podcasts and Spotify playback are not yet implemented. Subtitles are retrieved for the whole song and paginated (Note: this feature also works only locally, since the app would need to be Spotify-verified first)
 
 -_Flashcard Review_: Save and review vocabulary words as interactive flashcards.
 
