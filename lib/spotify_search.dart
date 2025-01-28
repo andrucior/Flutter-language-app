@@ -7,10 +7,10 @@ class SongSearchScreen extends StatefulWidget {
   const SongSearchScreen({super.key});
 
   @override
-  _SongSearchScreenState createState() => _SongSearchScreenState();
+  SongSearchScreenState createState() => SongSearchScreenState();
 }
 
-class _SongSearchScreenState extends State<SongSearchScreen> {
+class SongSearchScreenState extends State<SongSearchScreen> {
   final TextEditingController _queryController = TextEditingController();
   bool _isLoading = false;
   List<dynamic> _songs = [];
@@ -39,7 +39,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       _isLoading = true;
     });
 
-    Uri uri = Uri.parse("http://127.0.0.1:8000/search_tracks?query=$query"
+    Uri uri = Uri.parse("http://192.168.1.104:8000/search_tracks?query=$query"
         "&language=$_selectedLanguage");
 
     try {

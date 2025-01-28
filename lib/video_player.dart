@@ -28,7 +28,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   final ValueNotifier<String> _currentCaptionNotifier = ValueNotifier('');
   final ValueNotifier<String> _translatedCaptionNotifier = ValueNotifier('');
   String _selectedWord = '';
-  final String _backendUrl = "http://127.0.0.1:8000"; // due to youtube api
+  final String _backendUrl = "http://192.168.1.104:8000"; // due to youtube api
 
   @override
   void initState() {

@@ -28,15 +28,15 @@ class SpotifyPlayerScreen extends StatefulWidget {
   });
 
   @override
-  _SpotifyPlayerScreenState createState() => _SpotifyPlayerScreenState();
+  SpotifyPlayerScreenState createState() => SpotifyPlayerScreenState();
 }
 
-class _SpotifyPlayerScreenState extends State<SpotifyPlayerScreen> {
+class SpotifyPlayerScreenState extends State<SpotifyPlayerScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   List<List<String>> lyricsLines = [];
   final ValueNotifier<String> _translatedCaptionNotifier = ValueNotifier<String>('');
   int _currentPage = 0; // Track the current page
-  final int _linesPerPage = 5; // Maximum lines per page
+  final int _linesPerPage = 3; // Maximum lines per page
   String _selectedWord = '';
   bool _lyricsLoading = true;
 
@@ -58,7 +58,7 @@ class _SpotifyPlayerScreenState extends State<SpotifyPlayerScreen> {
   Future<void> fetchLyrics() async {
     try {
       final response = await http.get(Uri.parse(
-          'http://127.0.0.1:8000/get_lyrics?'
+          'http://192.168.1.104:8000/get_lyrics?'
               'artist=${Uri.encodeComponent(widget.artistName)}'
               '&song=${Uri.encodeComponent(widget.songName)}'
               '&language=${Uri.encodeComponent(widget.selectedLanguage)}'));
@@ -112,7 +112,10 @@ class _SpotifyPlayerScreenState extends State<SpotifyPlayerScreen> {
   Future<void> _translateWord(String word) async {
     try {
       final response = await http.get(Uri.parse(
-          'http://127.0.0.1:8000/get_translation?word=${Uri.encodeComponent(word)}&source=${widget.selectedLanguage}&target=${widget.targetLanguage}'));
+          'http://192.168.1.104:8000/get_translation?'
+              'word=${Uri.encodeComponent(word)}'
+              '&source=${widget.selectedLanguage}'
+              '&target=${widget.targetLanguage}'));
 
       if (response.statusCode == 200) {
         _translatedCaptionNotifier.value = response.body;
@@ -199,7 +202,7 @@ class _SpotifyPlayerScreenState extends State<SpotifyPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
 
     final startIndex = _currentPage * _linesPerPage;
     final endIndex = startIndex + _linesPerPage;
@@ -228,7 +231,8 @@ class _SpotifyPlayerScreenState extends State<SpotifyPlayerScreen> {
               label: Text("Open in Spotify"),
             ),
             const SizedBox(height: 10),
-            Expanded(
+            SizedBox(
+              height: screenHeight / 3,
               child: _lyricsLoading
                   ? const Center(child: CircularProgressIndicator())
                   : lyricsLines.isEmpty
