@@ -16,7 +16,9 @@ Current Features:
 **Cross-Platform Support:**
 
 -Fully supported on Android and web (Note: use "flutter run -d chrome --web-renderer html" when run locally on web).
+
 -Should be compatible with iOS (requires macOS for testing).
+
 -Partial support for Windows (only flashcards).
 
 **Planned Features:**
@@ -30,9 +32,13 @@ Current Features:
 **Screens and Navigation**
 
 Main Screen (Home)
+
 Review Flashcards: Opens the flashcard review module to practice saved vocabulary.
-Read Fun Facts: A placeholder screen for content to be developed in the future.
+
+Learn grammar: A placeholder screen for content to be developed in the future.
+
 Browse Videos: Opens the YouTube video search module to discover content in the target language.
+
 Spotify: Allows users to search for songs in the selected language. (Playback not implemented.)
 
 **Authentication**
