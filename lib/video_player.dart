@@ -117,9 +117,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Future<void> _translateWord(String word) async {
-    final backend = '$_backendUrl/get_translation';
     final url = Uri.parse(
-        '$backend?word=$word&target=en&source=${widget.selectedLanguage}');
+        '$_backendUrl/get_translation?word=$word&target=en&source=${widget.selectedLanguage}');
 
     try {
       final response = await http.get(url);
