@@ -44,6 +44,7 @@ Spotify: Allows users to search for songs in the selected language. (Playback no
 <p align="center">
   <img src="https://github.com/user-attachments/assets/c526e5f2-f202-41a9-8761-d1796212f79f" width="20%"/>
 </p>
+
 **Authentication**
 
 Login and Sign Up: Integrated with Firebase Authentication.
