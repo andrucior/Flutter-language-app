@@ -2,6 +2,10 @@
 
 LingApp is a cross-platform language immersion application designed to help users improve their language skills by providing interactive and media-rich content. The app integrates YouTube videos, Spotify songs, flashcards, and other learning tools to create an engaging and personalized language learning experience.
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/c526e5f2-f202-41a9-8761-d1796212f79f" width="20%"/>
+</p>
+
 **Features**
 
 Current Features:
@@ -41,9 +45,6 @@ Learn grammar: A placeholder screen for content to be developed in the future.
 Browse Videos: Opens the YouTube video search module to discover content in the target language.
 
 Spotify: Allows users to search for songs in the selected language. (Playback not implemented.) 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/c526e5f2-f202-41a9-8761-d1796212f79f" width="20%"/>
-</p>
 
 **Authentication**
 
