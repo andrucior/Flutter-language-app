@@ -40,7 +40,7 @@ Learn grammar: A placeholder screen for content to be developed in the future.
 
 Browse Videos: Opens the YouTube video search module to discover content in the target language.
 
-Spotify: Allows users to search for songs in the selected language. (Playback not implemented.)
+Spotify: Allows users to search for songs in the selected language. (Playback not implemented.) <img src="https://github.com/user-attachments/assets/c526e5f2-f202-41a9-8761-d1796212f79f" width="20%"/>
 
 **Authentication**
 
@@ -51,5 +51,5 @@ Login and Sign Up: Integrated with Firebase Authentication.
 Frontend: Flutter (Dart)
 Backend: Firebase for authentication and database management. Python flask API for retrieving necessary data.
 
-<img src="https://github.com/user-attachments/assets/c526e5f2-f202-41a9-8761-d1796212f79f" width="20%"/>
+
 
